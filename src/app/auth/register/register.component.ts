@@ -3,6 +3,10 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import Swal from 'sweetalert2';
+import { AppState } from 'src/app/app.reducer';
+import { Store } from '@ngrx/store';
+import { Subscription } from 'rxjs';
+import * as ui from '../../shared/ui.actions';
 
 @Component({
   selector: 'app-register',
@@ -11,9 +15,14 @@ import Swal from 'sweetalert2';
 })
 export class RegisterComponent implements OnInit {
   form: FormGroup;
+  loading: boolean = false;
+  uiSubscription: Subscription;
+
   constructor(
     private fb: FormBuilder,
     private authService: AuthService,
+    private store: Store<AppState>,
+
     private router: Router
   ) {}
 
@@ -23,6 +32,13 @@ export class RegisterComponent implements OnInit {
       correo: ['', [Validators.required, Validators.email]],
       password: ['', Validators.required],
     });
+    this.uiSubscription = this.store
+      .select('ui')
+      .subscribe((ui) => (this.loading = ui.isLoading));
+  }
+
+  ngOnDestroy(): void {
+    this.uiSubscription.unsubscribe();
   }
 
   isInvalid() {
@@ -37,11 +53,15 @@ export class RegisterComponent implements OnInit {
     if (this.form.invalid) {
       return;
     }
+    this.store.dispatch(ui.isLoading());
+
     const { password, nombre, correo } = this.form.value;
     try {
       await this.authService.crearUsuario(nombre, correo, password);
+      this.store.dispatch(ui.stopLoading());
       this.router.navigate(['/']);
     } catch (err) {
+      this.store.dispatch(ui.stopLoading());
       Swal.fire({
         title: 'Opsss. ',
         text: err.message,
