@@ -12,7 +12,6 @@ import { AuthService } from './auth.service';
 export class IngresoEgresoService {
   constructor(
     private firestore: AngularFirestore,
-    private store: Store<AppState>,
     private authService: AuthService
   ) {}
 
